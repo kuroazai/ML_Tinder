@@ -64,7 +64,7 @@ def train_tindermodel():
 
     # compile model
     model.compile(loss='categorical_crossentropy',
-                  optimizer='adam',
+                  optimizer='rmsprop',
                   metrics=['accuracy'])
 
     # assign training and test data
