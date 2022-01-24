@@ -44,7 +44,7 @@ STEP 3 - Test Validate
 "python tinder.py mode=auto" , This will  start "research" swiping based on the models prediction on what you find attractive.
 
 STEP 4 - Repeat entire process until you're happy
-## Authors
+## Credits
 
 - [@geeksforgeeks](https://www.geeksforgeeks.org/python-image-classification-using-keras/)
 
