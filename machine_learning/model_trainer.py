@@ -1,23 +1,29 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec  9 23:20:16 2021
-
-@author: KuroAzai
-
-credits :  @https://www.geeksforgeeks.org/python-image-classification-using-keras/
-"""
-
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras import backend as K
+import config as cfg
 import tensorflow as tf
+import os
+import cv2
+
 print("TensorFlow version:", tf.__version__)
 
 # our training data
-data_0 = r''
-data_1 = r''
+liked_path = cfg.liked_images
+disliked_path = cfg.disliked_images
+
+def preprocess_images_v2(folder_path: str) -> (list, list):
+    images = []
+    labels = []
+    for image_name in os.listdir(folder_path):
+        image_path = os.path.join(folder_path, image_name)
+        image = cv2.imread(image_path)
+        image = cv2.resize(image, (128, 128))
+        images.append(image)
+        labels.append(1 if folder_path == liked_path else 0)
+    return images, labels
 
 
 @tf.autograph.experimental.do_not_convert
@@ -26,8 +32,8 @@ def train_tindermodel():
     img_width, img_height = 320, 320
 
     # model settings
-    train_data_dir = data_0
-    validation_data_dir = data_1
+    train_data_dir = liked_path
+    validation_data_dir = disliked_path
     nb_train_samples = 1378
     nb_validation_samples = 240
     epochs = 5000

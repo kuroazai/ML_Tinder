@@ -7,10 +7,6 @@ Created on Tue Dec  7 23:56:40 2021
 worked wonders for me maybe could for you also, use at your own risk of acc deletion etc...
 """
 
-from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.webdriver import FirefoxProfile
 import cssutils
 import keyboard
 import shutil
@@ -18,68 +14,16 @@ import time
 import os
 import requests
 import logging
-import tinder_automated
-from selenium.common.exceptions import NoSuchElementException
+from machine_learning import predictor
 import argparse
+from bs4 import BeautifulSoup
+import config as cfg
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.webdriver import FirefoxProfile
+from selenium.common.exceptions import NoSuchElementException
+from browser import web_engine
 cssutils.log.setLevel(logging.CRITICAL)
-
-
-class manager():
-
-    def __init__(self):
-        self.driver = ''
-        self.browser = ''
-
-
-def load():
-    url = 'https://tinder.com'
-    # options = Options()
-    profile = FirefoxProfile(r'your firefox profile here')
-    driver = webdriver.Firefox(profile)
-    # Run Driver in headerless mode
-    # options.headless = False
-    # Set the driver with its options
-    # browser = webdriver.Firefox(profile)
-    # Get the results from our headless browser for our objects page
-    driver.get(url)
-    # driver = browser
-    # time.sleep(1.5)
-    # src.browser = browser
-    src.driver = driver
-
-
-def count_files(APP_FOLDER):
-    totalFiles = 0
-    totalDir = 0
-    for base, dirs, files in os.walk(APP_FOLDER):
-        for directories in dirs:
-            totalDir += 1
-        for Files in files:
-            totalFiles += 1
-    return totalFiles
-
-
-# output folders for liked/disliked images
-likes = r''
-dislikes = r''
-# output folder for models predictions when running
-mlikes = r''
-mdislikes = r''
-
-src = manager()
-load()
-
-
-def check_exists_by_xpath(xpath, cat):
-    try:
-        src.driver.find_element_by_xpath(xpath)
-    except NoSuchElementException:
-        print('Click Unsuccessful', cat)
-        time.sleep(1)
-        return False
-    src.driver.find_element_by_xpath(xpath).click()
-    print("Click Success", cat)
-    return True
 
 
 def auto_tinder(number):
@@ -103,23 +47,23 @@ def auto_tinder(number):
             with open(temp_name, 'wb') as out_file:
                 shutil.copyfileobj(response.raw, out_file)
             # check if my type or not
-            val = tinder_automated.model_predict(temp_name)
+            val = predictor.model_predict(temp_name)
             # like or dislike
             try:  # used try so that if user pressed other than the given key error will not be shown
                 if keyboard.is_pressed('right'):
                     # save to liked
                     print('Liked')
 
-                    file_count = count_files(likes)
-                    name = likes + '/liked_{}.jpg'.format(str(file_count + 1))
+                    file_count = count_files(LIKES)
+                    name = LIKES + '/liked_{}.jpg'.format(str(file_count + 1))
                     response = requests.get(url, stream=True)
                     with open(name, 'wb') as out_file:
                         shutil.copyfileobj(response.raw, out_file)
                 elif keyboard.is_pressed('left'):
                     # save to Disliked
                     print('Disliked')
-                    file_count = count_files(dislikes)
-                    name = dislikes + '/disliked_{}.jpg'.format(str(file_count + 1))
+                    file_count = count_files(DISLIKES)
+                    name = DISLIKES + '/disliked_{}.jpg'.format(str(file_count + 1))
                     response = requests.get(url, stream=True)
                     with open(name, 'wb') as out_file:
                         shutil.copyfileobj(response.raw, out_file)
@@ -133,38 +77,49 @@ def auto_tinder(number):
                 # like
                 btn = '/html/body/div[1]/div/div[1]/div/main/div[1]/div/div/div[1]/div[1]/div/div[4]/div/div[4]/button'
                 # save image to likes
-                res = check_exists_by_xpath(btn, True)
+                res = src.check_exists_by_xpath(btn, True)
 
                 if res:
                     pass
                 else:
                     btn = '/html/body/div[1]/div/div[1]/div/main/div[1]/div/div/div[1]/div[1]/div/div[5]/div/div[4]/button/span/span'
-                    res = check_exists_by_xpath(btn, True)
+                    res = src.check_exists_by_xpath(btn, True)
                     if res:
                         pass
                     else:
                         continue
 
-                path, dirs, files = next(os.walk(mlikes))
+                path, dirs, files = next(os.walk(MLIKES))
                 file_count = len(files) + 1
-                name = mlikes + '/m_liked_{}.jpg'.format(str(file_count + 1))
+                name = MLIKES + '/m_liked_{}.jpg'.format(str(file_count + 1))
                 shutil.move(temp_name, name)
                 time.sleep(3)
                 number -= 1
             else:
                 # dislike
                 btn = '/html/body/div[1]/div/div[1]/div/main/div[1]/div/div/div[1]/div[1]/div/div[5]/div/div[2]/button'
-                res = check_exists_by_xpath(btn, False)
+                res = src.check_exists_by_xpath(btn, False)
                 if res:
                     pass
                 else:
                     continue
-                path, dirs, files = next(os.walk(mdislikes))
+                path, dirs, files = next(os.walk(MDISLIKES))
                 file_count = len(files) + 1
-                name = mdislikes + '/m_disliked_{}.jpg'.format(str(file_count + 1))
+                name = MDISLIKES + '/m_disliked_{}.jpg'.format(str(file_count + 1))
                 shutil.move(temp_name, name)
                 # save image to dislikes
                 time.sleep(3)
+
+
+def count_files(APP_FOLDER):
+    totalFiles = 0
+    totalDir = 0
+    for base, dirs, files in os.walk(APP_FOLDER):
+        for directories in dirs:
+            totalDir += 1
+        for Files in files:
+            totalFiles += 1
+    return totalFiles
 
 
 def data_collection():
@@ -185,15 +140,15 @@ def data_collection():
         try:  # used try so that if user pressed other than the given key error will not be shown
             if keyboard.is_pressed('right'):
                 # save image into likes
-                file_count = count_files(mlikes)
-                name = likes + '/liked_{}.jpg'.format(str(file_count + 1))
+                file_count = count_files(MLIKES)
+                name = MLIKES + '/liked_{}.jpg'.format(str(file_count + 1))
                 response = requests.get(url, stream=True)
                 with open(name, 'wb') as out_file:
                     shutil.copyfileobj(response.raw, out_file)
             elif keyboard.is_pressed('left'):
                 # save to dislikes
-                file_count = count_files(mdislikes)
-                name = dislikes + '/disliked_{}.jpg'.format(str(file_count + 1))
+                file_count = count_files(MDISLIKES)
+                name = MDISLIKES + '/disliked_{}.jpg'.format(str(file_count + 1))
                 response = requests.get(url, stream=True)
                 with open(name, 'wb') as out_file:
                     shutil.copyfileobj(response.raw, out_file)
@@ -202,6 +157,13 @@ def data_collection():
 
 
 if __name__ == "__main__":
+    src = web_engine.WebEngine()
+    # terrible but too lazy to change it
+    LIKES = cfg.liked_images
+    DISLIKES = cfg.disliked_images
+    MLIKES = cfg.mliked_images
+    MDISLIKES = cfg.mdisliked_images
+    # argparser for mode selection
     parser = argparse.ArgumentParser()
     parser.add_argument("mode")
     parser.add_argument("validation")

@@ -1,6 +1,15 @@
 
 # Tinder Machine Learning
+![WORK IN PROGRESS](https://img.shields.io/badge/WORK%20IN%20PROGRESS-YES-GREEN?style=for-the-badge)
+![STATUS](https://img.shields.io/badge/STATUS-BROKEN-red?style=for-the-badge)
+![Completion](https://img.shields.io/badge/COMPLETION-45%25-orange?style=for-the-badge)
+![MADE WITH](https://img.shields.io/badge/MADE%20WITH-PYTHON-blue?style=for-the-badge)
+![MADE WITH](https://img.shields.io/badge/MADE%20WITH-SELENIUM-blue?style=for-the-badge)
+![MADE WITH](https://img.shields.io/badge/MADE%20WITH-KERAS-blue?style=for-the-badge)
+![MADE WITH](https://img.shields.io/badge/MADE%20WITH-TENSORFLOW-blue?style=for-the-badge)
+![MADE WITH](https://img.shields.io/badge/MADE%20WITH-BS4-blue?style=for-the-badge)
 
+Currently Absolutely broken as I overhual it with my new found experience with machine learning and overall programming this wonderful "research" tool will be rolled out SOON.
 This is soley for "research" purposes for ultilizing image classification with keras base models, google resnet and inception models.
 current highest accuracy model has achieved is 85% and the model/weights will not be uploaded.
 
@@ -10,22 +19,16 @@ Please read tinder tos before using this script, use at your own discretion.
 ## Installation
 Below are the libraries required to run the script
 ```python
-  pip install beautifulsoup4
-  pip install selenium
-  pip install numpy 
-  pip install tensorflow
-  pip install keras 
-  pip install cssutils
-  pip install keyboard
+  pip install -r requirements.txt
 ```
     
 ## Model implementation Roadmap
 
-- Implement Google Resnet 
+- Implement Google Resnet [X]
 
-- Implement Inception v4
+- Implement Inception v3 [X] 
 
-- Implement GPT-3
+- Implement GPT-3 [O] - due to the nature of the model it is not suitable for this task
 
   
 ## Running Instructions
@@ -43,9 +46,6 @@ STEP 3 - Test Validate
 
 "python tinder.py mode=auto" , This will  start "research" swiping based on the models prediction on what you find attractive.
 
-STEP 4 - Repeat entire process until you're happy
-## Credits
-
-- [@geeksforgeeks](https://www.geeksforgeeks.org/python-image-classification-using-keras/)
+STEP 4 - Repeat entire process until you're happy or give up and embrace the cold embrace of loneliness.
 
   

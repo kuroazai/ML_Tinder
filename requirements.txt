@@ -1,0 +1,8 @@
+requests
+selenium
+keyboard
+beautifulsoup4
+keras
+numpy
+tensorflow
+cssutils
