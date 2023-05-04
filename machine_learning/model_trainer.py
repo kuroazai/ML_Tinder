@@ -1,20 +1,22 @@
-from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D
-from keras.layers import Activation, Dropout, Flatten, Dense
 from keras import backend as K
 import config as cfg
 import tensorflow as tf
 import os
 import cv2
+import numpy as np
+import argparse
+from sklearn.model_selection import train_test_split
+from keras.preprocessing.image import ImageDataGenerator
+from keras.models import Sequential, Model
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D
+from keras.applications.vgg16 import VGG16, preprocess_input as vgg16_preprocess_input
+from keras.applications.xception import Xception, preprocess_input as xception_preprocess_input
+from keras.applications.inception_resnet_v2 import InceptionResNetV2, preprocess_input as inceptionresnetv2_preprocess_input
+from keras.applications.inception_v3 import InceptionV3, preprocess_input as inceptionv3_preprocess_input
+from keras.utils import to_categorical
 
-print("TensorFlow version:", tf.__version__)
 
-# our training data
-liked_path = cfg.liked_images
-disliked_path = cfg.disliked_images
-
-def preprocess_images_v2(folder_path: str) -> (list, list):
+def preprocess_images(folder_path: str) -> (list, list):
     images = []
     labels = []
     for image_name in os.listdir(folder_path):
@@ -22,87 +24,90 @@ def preprocess_images_v2(folder_path: str) -> (list, list):
         image = cv2.imread(image_path)
         image = cv2.resize(image, (128, 128))
         images.append(image)
-        labels.append(1 if folder_path == liked_path else 0)
+        labels.append(1 if folder_path == cfg.liked_images else 0)
     return images, labels
 
 
-@tf.autograph.experimental.do_not_convert
-def train_tindermodel():
-    # keep 50% of the quality otherwise 640x640
-    img_width, img_height = 320, 320
-
-    # model settings
-    train_data_dir = liked_path
-    validation_data_dir = disliked_path
-    nb_train_samples = 1378
-    nb_validation_samples = 240
-    epochs = 5000
-    batch_size = 32
-
-    if K.image_data_format() == 'channels_first':
-        input_shape = (3, img_width, img_height)
+def build_model(model_name: str) -> (Sequential, ImageDataGenerator):
+    # models am interested in running base weights are static imagenet  weights
+    if model_name == 'vgg16':
+        base_model = VGG16(weights='imagenet', include_top=False)
+        preprocess_input = vgg16_preprocess_input
+    elif model_name == 'inceptionv3':
+        base_model = InceptionV3(weights='imagenet', include_top=False)
+        preprocess_input = inceptionv3_preprocess_input
+    elif model_name == 'xception':
+        base_model = Xception(weights='imagenet', include_top=False)
+        preprocess_input = xception_preprocess_input
+    elif model_name == 'inceptionresnetv2':
+        base_model = InceptionResNetV2(weights='imagenet', include_top=False)
+        preprocess_input = inceptionresnetv2_preprocess_input
     else:
-        input_shape = (img_width, img_height, 3)
+        raise ValueError('Invalid model name or not implemented!')
 
-    # 3 hidden Layers, will be replaced with resnet or inception
-    model = Sequential()
-    model.add(Conv2D(32, (3, 3), input_shape=input_shape))
-    model.add(Activation('softmax'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    x = base_model.output
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(128, activation='relu')(x)
+    predictions = Dense(2, activation='softmax')(x)
 
-    model.add(Conv2D(64, (3, 3)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model = Model(inputs=base_model.input, outputs=predictions)
 
-    model.add(Conv2D(128, (3, 3)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    for layer in base_model.layers:
+        layer.trainable = False
+    # since we can have multiple classes, we use categorical_crossentropy otherwise if we want liner output we use binary_crossentropy
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    model.add(Flatten())
-    model.add(Dense(64))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(1))
-    model.add(Activation('sigmoid'))
+    return model, preprocess_input
 
-    # if you want to continue training previous weights
-    # model.load_weights('model_weights_v1.h5')
 
-    # compile model
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='rmsprop',
-                  metrics=['accuracy'])
+def train_tinder_model(liked_path: str, disliked_path: str, model_name: str) -> Sequential:
+    # Load and preprocess the 'liked' images
+    liked_images, liked_labels = preprocess_images(liked_path)
 
-    # assign training and test data
-    train_datagen = ImageDataGenerator(
-        rescale=1. / 255,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True)
-    # convert to black n white
-    test_datagen = ImageDataGenerator(rescale=1. / 255)
+    # Load and preprocess the 'disliked' images
+    disliked_images, disliked_labels = preprocess_images(disliked_path)
 
-    train_generator = train_datagen.flow_from_directory(
-        train_data_dir,
-        target_size=(img_width, img_height),
-        batch_size=batch_size,
-        class_mode='binary')
+    # Concatenate the data and convert the labels to one-hot encoding
+    X = np.concatenate([liked_images, disliked_images])
+    y = to_categorical(np.concatenate([liked_labels, disliked_labels]))
 
-    validation_generator = test_datagen.flow_from_directory(
-        validation_data_dir,
-        target_size=(img_width, img_height),
-        batch_size=batch_size,
-        class_mode='binary')
+    # Split the data into training and testing sets (e.g. 80/20 split)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-    model.fit(
-        train_generator,
-        steps_per_epoch=nb_train_samples // batch_size,
-        epochs=epochs,
-        validation_data=validation_generator,
-        validation_steps=nb_validation_samples // batch_size)
+    # Build the model
+    model, preprocess_input = build_model(model_name)
 
-    model.save_weights('model_weights_v1.h5')
+    # Preprocess the images using the appropriate function
+    X_train = preprocess_input(X_train)
+    X_test = preprocess_input(X_test)
+
+    # Train the model on the training data
+    model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test))
+
+    # Evaluate the model on the testing data
+    loss, accuracy = model.evaluate(X_test, y_test)
+    print('Test loss:', loss)
+    print('Test accuracy:', accuracy)
+    # save model
     model.save('tinder_model_main.h5')
+    # save model weights
+    model.save_weights('tinder_model_weights.h5')
+    return model
 
 
-train_tindermodel()
+def main():
+    # run training
+    train_tinder_model(cfg.liked_images,
+                       cfg.disliked_images,
+                       args.model_name)
+
+
+if __name__ == '__main__':
+    print("TensorFlow version:", tf.__version__)
+    print("Keras version:", tf.keras.__version__)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_name', type=str, default='vgg16', help='Model name')
+    args = parser.parse_args()
+
+    main()

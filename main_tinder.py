@@ -18,10 +18,6 @@ from machine_learning import predictor
 import argparse
 from bs4 import BeautifulSoup
 import config as cfg
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.webdriver import FirefoxProfile
-from selenium.common.exceptions import NoSuchElementException
 from browser import web_engine
 cssutils.log.setLevel(logging.CRITICAL)
 
@@ -46,10 +42,8 @@ def auto_tinder(number):
             response = requests.get(url, stream=True)
             with open(temp_name, 'wb') as out_file:
                 shutil.copyfileobj(response.raw, out_file)
-            # check if my type or not
             val = predictor.model_predict(temp_name)
-            # like or dislike
-            try:  # used try so that if user pressed other than the given key error will not be shown
+            try:
                 if keyboard.is_pressed('right'):
                     # save to liked
                     print('Liked')
@@ -76,7 +70,6 @@ def auto_tinder(number):
             if val == 0:
                 # like
                 btn = '/html/body/div[1]/div/div[1]/div/main/div[1]/div/div/div[1]/div[1]/div/div[4]/div/div[4]/button'
-                # save image to likes
                 res = src.check_exists_by_xpath(btn, True)
 
                 if res:
@@ -89,9 +82,9 @@ def auto_tinder(number):
                     else:
                         continue
 
-                path, dirs, files = next(os.walk(MLIKES))
+                path, dirs, files = next(os.walk(ML_LIKES))
                 file_count = len(files) + 1
-                name = MLIKES + '/m_liked_{}.jpg'.format(str(file_count + 1))
+                name = ML_LIKES + '/m_liked_{}.jpg'.format(str(file_count + 1))
                 shutil.move(temp_name, name)
                 time.sleep(3)
                 number -= 1
@@ -103,23 +96,23 @@ def auto_tinder(number):
                     pass
                 else:
                     continue
-                path, dirs, files = next(os.walk(MDISLIKES))
+                path, dirs, files = next(os.walk(ML_DISLIKES))
                 file_count = len(files) + 1
-                name = MDISLIKES + '/m_disliked_{}.jpg'.format(str(file_count + 1))
+                name = ML_DISLIKES + '/m_disliked_{}.jpg'.format(str(file_count + 1))
                 shutil.move(temp_name, name)
                 # save image to dislikes
                 time.sleep(3)
 
 
 def count_files(APP_FOLDER):
-    totalFiles = 0
-    totalDir = 0
+    total_files = 0
+    total_dir = 0
     for base, dirs, files in os.walk(APP_FOLDER):
         for directories in dirs:
-            totalDir += 1
+            total_dir += 1
         for Files in files:
-            totalFiles += 1
-    return totalFiles
+            total_files += 1
+    return total_files
 
 
 def data_collection():
@@ -140,15 +133,15 @@ def data_collection():
         try:  # used try so that if user pressed other than the given key error will not be shown
             if keyboard.is_pressed('right'):
                 # save image into likes
-                file_count = count_files(MLIKES)
-                name = MLIKES + '/liked_{}.jpg'.format(str(file_count + 1))
+                file_count = count_files(ML_LIKES)
+                name = ML_LIKES + '/liked_{}.jpg'.format(str(file_count + 1))
                 response = requests.get(url, stream=True)
                 with open(name, 'wb') as out_file:
                     shutil.copyfileobj(response.raw, out_file)
             elif keyboard.is_pressed('left'):
                 # save to dislikes
-                file_count = count_files(MDISLIKES)
-                name = MDISLIKES + '/disliked_{}.jpg'.format(str(file_count + 1))
+                file_count = count_files(ML_DISLIKES)
+                name = ML_DISLIKES + '/disliked_{}.jpg'.format(str(file_count + 1))
                 response = requests.get(url, stream=True)
                 with open(name, 'wb') as out_file:
                     shutil.copyfileobj(response.raw, out_file)
@@ -161,14 +154,15 @@ if __name__ == "__main__":
     # terrible but too lazy to change it
     LIKES = cfg.liked_images
     DISLIKES = cfg.disliked_images
-    MLIKES = cfg.mliked_images
-    MDISLIKES = cfg.mdisliked_images
-    # argparser for mode selection
+    ML_LIKES = cfg.mliked_images
+    ML_DISLIKES = cfg.mdisliked_images
+
+    # arg-parser for mode selection
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode")
-    parser.add_argument("validation")
+    parser.add_argument('--mode', type=str, default='data', help='The mode we want to run either data for data collection or auto for automatic swiping')
+    parser.add_argument('--validation', type=int, default=1, help='Weahter we want to validate the model or not 1 or 0 for yes or no')
     args = parser.parse_args()
     if args.mode == 'auto':
-        auto_tinder(1000)
+        auto_tinder(cfg.total_likes)
     elif args.mode == 'data':
         data_collection()

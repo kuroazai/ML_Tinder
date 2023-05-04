@@ -6,12 +6,13 @@ Created on Fri Dec 10 11:05:05 2021
 """
 
 from keras.models import load_model
-from keras.preprocessing.image import load_img
+import cv2
+import os
 import numpy as np
 
-
 def model_predict(jpg):
-    image = load_img(jpg, target_size=(320, 320))
+    image = cv2.imread(jpg)
+    image = cv2.resize(image, (320, 320))
     img = np.array(image)
     img = img / 255.0
     img = img.reshape(1, 224, 224, 3)
@@ -23,5 +24,9 @@ def model_predict(jpg):
     elif y_pred[0][0] == 1:
         return 1
 
-
-model = load_model('tinder_model_main.h5')
+# check if the model exists
+if os.path.isfile('tinder_model_main.h5'):
+    print('Model found')
+    model = load_model('tinder_model_main.h5')
+else:
+    print('Model not found')

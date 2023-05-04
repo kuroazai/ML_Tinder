@@ -3,6 +3,8 @@ selenium
 keyboard
 beautifulsoup4
 keras
+keras-applications
+scikit-learn
 numpy
 tensorflow
 cssutils
