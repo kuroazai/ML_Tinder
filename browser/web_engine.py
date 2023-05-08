@@ -1,5 +1,6 @@
 import os
 import time
+import re
 from selenium import webdriver
 from config import firefox_profile
 from bs4 import BeautifulSoup
@@ -24,7 +25,7 @@ class WebEngine:
         # src.browser = browser
 
     def load_page(self):
-        self.driver.get(self.url)
+        self.browser.get(self.url)
         time.sleep(1.5)
 
     def check_exists_by_xpath(self, xpath, cat):
@@ -37,5 +38,36 @@ class WebEngine:
         self.browser.driver.find_element_by_xpath(xpath).click()
         print("Click Success", cat)
         return True
+
+    def get_current_image(self, xpath):
+        element = self.browser.find_element(by='xpath', value=xpath)
+        element_source = element.get_attribute('outerHTML')
+        soup = BeautifulSoup(element_source, 'html.parser')
+
+        # Find the div element
+        div = soup.find('div')
+
+        # Extract the value of the "style" attribute
+        style = div.get('style')
+
+        regex = r'url\("(.+)"\)'
+
+        # Use the regular expression to find the text between url(" and ")
+        matches = re.search(regex, style)
+        if matches:
+            url = matches.group(1)
+            return url
+        else:
+            print("URL not found")
+
+
+    def get_page_source(self):
+        return self.browser.driver.page_source
+
+    def refresh_page(self):
+        self.browser.driver.refresh()
+
+    def close_browser(self):
+        self.browser.driver.close()
 
 
