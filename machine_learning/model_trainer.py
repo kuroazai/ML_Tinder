@@ -9,6 +9,7 @@ from keras.applications.xception import Xception, preprocess_input as xception_p
 from keras.applications.inception_resnet_v2 import InceptionResNetV2, preprocess_input as inceptionresnetv2_preprocess_input
 from keras.applications.inception_v3 import InceptionV3, preprocess_input as inceptionv3_preprocess_input
 from keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 
 
 def build_model(model_name: str, input_shape: tuple) -> (Sequential, ImageDataGenerator):
@@ -72,10 +73,18 @@ def train_tinder_model(staging_path: str, model_name: str) -> Sequential:
     model.compile(optimizer=Adam(lr=0.001),
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
-    # Train the model on the training data
+    # Callbacks for data visualization in TensorBoard
+    callbacks = [
+        ModelCheckpoint('tinder_model.h5', save_best_only=True),
+        EarlyStopping(patience=3),
+        ReduceLROnPlateau(factor=0.1, patience=2)
+    ]
+
+    # Train the model on the training data and test on test data
     model.fit(train_generator,
               epochs=10,
-              validation_data=test_generator)
+              validation_data=test_generator,
+              callbacks=callbacks)
     # save model
     model.save('tinder_model_main.h5')
     # save model weights
