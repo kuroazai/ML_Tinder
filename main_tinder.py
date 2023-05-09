@@ -26,43 +26,24 @@ def auto_tinder(number):
     while number > 0:
         soup = BeautifulSoup(src.driver.page_source, "html.parser")
         divs = soup.find_all("div", class_="Bdrs(8px) Bgz(cv) Bgp(c) StretchedBox")
-        # print(len(divs))
         url = ''
         if len(divs) >= 2 and url == '':
-            selector = divs[1]
-            # print(x, type(x))
+            n = int(len(divs) / 2)
+            selector = divs[n]
             soup = BeautifulSoup(str(selector), "html.parser")
             div_style = soup.find('div')['style']
             style = cssutils.parseStyle(div_style)
-            # data = [x for x in style]
-            # print(data)
             url = style['background-image']
             url = url.replace('url(', '').replace(')', '')
+            #print('\n\n', url)
+
             temp_name = 'current_profile.jpg'
             response = requests.get(url, stream=True)
+
             with open(temp_name, 'wb') as out_file:
                 shutil.copyfileobj(response.raw, out_file)
-            val = predictor.model_predict(temp_name)
-            try:
-                if keyboard.is_pressed('right'):
-                    # save to liked
-                    print('Liked')
 
-                    file_count = count_files(LIKES)
-                    name = LIKES + '/liked_{}.jpg'.format(str(file_count + 1))
-                    response = requests.get(url, stream=True)
-                    with open(name, 'wb') as out_file:
-                        shutil.copyfileobj(response.raw, out_file)
-                elif keyboard.is_pressed('left'):
-                    # save to Disliked
-                    print('Disliked')
-                    file_count = count_files(DISLIKES)
-                    name = DISLIKES + '/disliked_{}.jpg'.format(str(file_count + 1))
-                    response = requests.get(url, stream=True)
-                    with open(name, 'wb') as out_file:
-                        shutil.copyfileobj(response.raw, out_file)
-            except ValueError:
-                print(ValueError)
+            val = predictor.model_predict(temp_name)
 
             if args.validation == 1:
                 print('Validation mode')
@@ -142,8 +123,8 @@ def data_collection(seconds):
         if keyboard.is_pressed('right'):
             print('Liked')
             # save image into likes
-            file_count = count_files(ML_LIKES)
-            name = ML_LIKES + '/liked_{}.jpg'.format(str(file_count + 1))
+            file_count = count_files(LIKES)
+            name = LIKES + '/liked_{}.jpg'.format(str(file_count + 1))
             print(name)
             print(url)
             response = requests.get(url, stream=True)
@@ -151,8 +132,8 @@ def data_collection(seconds):
                 shutil.copyfileobj(response.raw, out_file)
         if keyboard.is_pressed('left'):
             print('Disliked')
-            file_count = count_files(ML_DISLIKES)
-            name = ML_DISLIKES + '/disliked_{}.jpg'.format(str(file_count + 1))
+            file_count = count_files(DISLIKES)
+            name = DISLIKES + '/disliked_{}.jpg'.format(str(file_count + 1))
             print(name)
             print(url)
             response = requests.get(url, stream=True)
