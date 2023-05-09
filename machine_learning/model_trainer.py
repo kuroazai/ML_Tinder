@@ -1,7 +1,5 @@
 import config as cfg
 import tensorflow as tf
-import os
-import cv2
 import argparse
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential, Model
@@ -10,21 +8,7 @@ from keras.applications.vgg16 import VGG16, preprocess_input as vgg16_preprocess
 from keras.applications.xception import Xception, preprocess_input as xception_preprocess_input
 from keras.applications.inception_resnet_v2 import InceptionResNetV2, preprocess_input as inceptionresnetv2_preprocess_input
 from keras.applications.inception_v3 import InceptionV3, preprocess_input as inceptionv3_preprocess_input
-from keras.utils import to_categorical
 from keras.optimizers import Adam
-
-
-def preprocess_images(folder_path):
-    images = []
-    labels = []
-    for image_name in os.listdir(folder_path):
-        image_path = os.path.join(folder_path, image_name)
-        image = cv2.imread(image_path)
-        image = cv2.resize(image, (224, 224))
-        images.append(image)
-        labels.append(1 if folder_path == cfg.mliked_images else 0)
-    labels = to_categorical(labels)
-    return images, labels
 
 
 def build_model(model_name: str, input_shape: tuple) -> (Sequential, ImageDataGenerator):
@@ -50,6 +34,7 @@ def build_model(model_name: str, input_shape: tuple) -> (Sequential, ImageDataGe
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dense(128, activation='relu')(x)
+    # TODO: predict the number of classes which should be passed in
     predictions = Dense(2, activation='softmax')(x)
 
     model = Model(inputs=base_model.input, outputs=predictions)
@@ -65,7 +50,7 @@ def build_model(model_name: str, input_shape: tuple) -> (Sequential, ImageDataGe
 def train_tinder_model(staging_path: str, model_name: str) -> Sequential:
     # Create an image generator to load and preprocess the images on the fly
     datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
-    # Load and preprocess the 'liked' images
+    # flow from staging area to get training data
     train_generator = datagen.flow_from_directory(
         staging_path,
         target_size=(224, 224),
@@ -73,7 +58,7 @@ def train_tinder_model(staging_path: str, model_name: str) -> Sequential:
         class_mode='categorical',
         subset='training'
     )
-    # Load and preprocess the 'disliked' images
+    # flow from stagin area to get test data
     test_generator = datagen.flow_from_directory(
         staging_path,
         target_size=(224, 224),
@@ -81,7 +66,7 @@ def train_tinder_model(staging_path: str, model_name: str) -> Sequential:
         class_mode='categorical',
         subset='validation'
     )
-    # Build the model
+    # Build the model and pass the shape
     model, preprocess_input = build_model(model_name, input_shape=(224, 224, 3))
     # Compile the model
     model.compile(optimizer=Adam(lr=0.001),
@@ -95,6 +80,7 @@ def train_tinder_model(staging_path: str, model_name: str) -> Sequential:
     model.save('tinder_model_main.h5')
     # save model weights
     model.save_weights('tinder_model_weights.h5')
+    # not sure why but avaliable if needed
     return model
 
 
