@@ -1,49 +1,51 @@
-from keras import backend as K
 import config as cfg
 import tensorflow as tf
 import os
 import cv2
-import numpy as np
 import argparse
-from sklearn.model_selection import train_test_split
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential, Model
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D
+from keras.layers import Dense, GlobalAveragePooling2D
 from keras.applications.vgg16 import VGG16, preprocess_input as vgg16_preprocess_input
 from keras.applications.xception import Xception, preprocess_input as xception_preprocess_input
 from keras.applications.inception_resnet_v2 import InceptionResNetV2, preprocess_input as inceptionresnetv2_preprocess_input
 from keras.applications.inception_v3 import InceptionV3, preprocess_input as inceptionv3_preprocess_input
 from keras.utils import to_categorical
+from keras.optimizers import Adam
 
 
-def preprocess_images(folder_path: str) -> (list, list):
+def preprocess_images(folder_path):
     images = []
     labels = []
     for image_name in os.listdir(folder_path):
         image_path = os.path.join(folder_path, image_name)
         image = cv2.imread(image_path)
-        image = cv2.resize(image, (128, 128))
+        image = cv2.resize(image, (224, 224))
         images.append(image)
-        labels.append(1 if folder_path == cfg.liked_images else 0)
+        labels.append(1 if folder_path == cfg.mliked_images else 0)
+    labels = to_categorical(labels)
     return images, labels
 
 
-def build_model(model_name: str) -> (Sequential, ImageDataGenerator):
+def build_model(model_name: str, input_shape: tuple) -> (Sequential, ImageDataGenerator):
     # models am interested in running base weights are static imagenet  weights
     if model_name == 'vgg16':
-        base_model = VGG16(weights='imagenet', include_top=False)
+        base_model = VGG16(weights='imagenet', include_top=False, input_shape=input_shape)
         preprocess_input = vgg16_preprocess_input
+    # elif model_name == 'resnet50':
+    #     base_model = ResNet50(weights='imagenet', include_top=False, input_shape=input_shape)
+    #     preprocess_input = resnet50_preprocess_input
     elif model_name == 'inceptionv3':
-        base_model = InceptionV3(weights='imagenet', include_top=False)
+        base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=input_shape)
         preprocess_input = inceptionv3_preprocess_input
     elif model_name == 'xception':
-        base_model = Xception(weights='imagenet', include_top=False)
+        base_model = Xception(weights='imagenet', include_top=False, input_shape=input_shape)
         preprocess_input = xception_preprocess_input
     elif model_name == 'inceptionresnetv2':
-        base_model = InceptionResNetV2(weights='imagenet', include_top=False)
+        base_model = InceptionResNetV2(weights='imagenet', include_top=False, input_shape=input_shape)
         preprocess_input = inceptionresnetv2_preprocess_input
     else:
-        raise ValueError('Invalid model name or not implemented!')
+        raise ValueError('Invalid model name')
 
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
@@ -60,34 +62,35 @@ def build_model(model_name: str) -> (Sequential, ImageDataGenerator):
     return model, preprocess_input
 
 
-def train_tinder_model(liked_path: str, disliked_path: str, model_name: str) -> Sequential:
+def train_tinder_model(staging_path: str, model_name: str) -> Sequential:
+    # Create an image generator to load and preprocess the images on the fly
+    datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
     # Load and preprocess the 'liked' images
-    liked_images, liked_labels = preprocess_images(liked_path)
-
+    train_generator = datagen.flow_from_directory(
+        staging_path,
+        target_size=(224, 224),
+        batch_size=32,
+        class_mode='categorical',
+        subset='training'
+    )
     # Load and preprocess the 'disliked' images
-    disliked_images, disliked_labels = preprocess_images(disliked_path)
-
-    # Concatenate the data and convert the labels to one-hot encoding
-    X = np.concatenate([liked_images, disliked_images])
-    y = to_categorical(np.concatenate([liked_labels, disliked_labels]))
-
-    # Split the data into training and testing sets (e.g. 80/20 split)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
+    test_generator = datagen.flow_from_directory(
+        staging_path,
+        target_size=(224, 224),
+        batch_size=32,
+        class_mode='categorical',
+        subset='validation'
+    )
     # Build the model
-    model, preprocess_input = build_model(model_name)
-
-    # Preprocess the images using the appropriate function
-    X_train = preprocess_input(X_train)
-    X_test = preprocess_input(X_test)
-
+    model, preprocess_input = build_model(model_name, input_shape=(224, 224, 3))
+    # Compile the model
+    model.compile(optimizer=Adam(lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
     # Train the model on the training data
-    model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test))
-
-    # Evaluate the model on the testing data
-    loss, accuracy = model.evaluate(X_test, y_test)
-    print('Test loss:', loss)
-    print('Test accuracy:', accuracy)
+    model.fit(train_generator,
+              epochs=10,
+              validation_data=test_generator)
     # save model
     model.save('tinder_model_main.h5')
     # save model weights
@@ -97,8 +100,7 @@ def train_tinder_model(liked_path: str, disliked_path: str, model_name: str) -> 
 
 def main():
     # run training
-    train_tinder_model(cfg.liked_images,
-                       cfg.disliked_images,
+    train_tinder_model(cfg.staging_area,
                        args.model_name)
 
 
