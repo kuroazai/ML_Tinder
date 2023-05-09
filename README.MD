@@ -1,8 +1,8 @@
 
 # Tinder Machine Learning
 ![WORK IN PROGRESS](https://img.shields.io/badge/WORK%20IN%20PROGRESS-YES-GREEN?style=for-the-badge)
-![STATUS](https://img.shields.io/badge/STATUS-BROKEN-red?style=for-the-badge)
-![Completion](https://img.shields.io/badge/COMPLETION-45%25-orange?style=for-the-badge)
+![STATUS](https://img.shields.io/badge/STATUS-working-green?style=for-the-badge)
+![Completion](https://img.shields.io/badge/COMPLETION-75%25-orange?style=for-the-badge)
 ![MADE WITH](https://img.shields.io/badge/MADE%20WITH-PYTHON-blue?style=for-the-badge)
 ![MADE WITH](https://img.shields.io/badge/MADE%20WITH-SELENIUM-blue?style=for-the-badge)
 ![MADE WITH](https://img.shields.io/badge/MADE%20WITH-KERAS-blue?style=for-the-badge)
