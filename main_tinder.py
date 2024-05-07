@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Dec  7 23:56:40 2021
-
-@author: KuroAzai
-
-worked wonders for me maybe could for you also, use at your own risk of acc deletion etc...
-"""
-
 import cssutils
 import keyboard
 import shutil
@@ -35,7 +26,6 @@ def auto_tinder(number):
             style = cssutils.parseStyle(div_style)
             url = style['background-image']
             url = url.replace('url(', '').replace(')', '')
-            #print('\n\n', url)
 
             temp_name = 'current_profile.jpg'
             response = requests.get(url, stream=True)
@@ -50,7 +40,6 @@ def auto_tinder(number):
                 continue
 
             if val == 0:
-                # like
                 btn = '/html/body/div[1]/div/div[1]/div/main/div[1]/div/div/div[1]/div[1]/div/div[4]/div/div[4]/button'
                 res = src.check_exists_by_xpath(btn, True)
 
@@ -71,7 +60,6 @@ def auto_tinder(number):
                 time.sleep(3)
                 number -= 1
             else:
-                # dislike
                 btn = '/html/body/div[1]/div/div[1]/div/main/div[1]/div/div/div[1]/div[1]/div/div[5]/div/div[2]/button'
                 res = src.check_exists_by_xpath(btn, False)
                 if res:
@@ -82,7 +70,6 @@ def auto_tinder(number):
                 file_count = len(files) + 1
                 name = ML_DISLIKES + '/m_disliked_{}.jpg'.format(str(file_count + 1))
                 shutil.move(temp_name, name)
-                # save image to dislikes
                 time.sleep(3)
 
 
@@ -104,9 +91,7 @@ def data_collection(seconds):
     while True:
         soup = BeautifulSoup(src.browser.page_source, "html.parser")
         divs = soup.find_all("div", class_="Bdrs(8px) Bgz(cv) Bgp(c) StretchedBox")
-        # print(len(divs))
         url = ''
-        #print(len(divs), len(divs) / 2)
         if len(divs) >= 2 and url == '':
             n = int(len(divs) / 2)
             selector = divs[n]
@@ -115,14 +100,12 @@ def data_collection(seconds):
             style = cssutils.parseStyle(div_style)
             url = style['background-image']
             url = url.replace('url(', '').replace(')', '')
-            #print('\n\n', url)
 
         if url == '' or url is None:
             continue
 
         if keyboard.is_pressed('right'):
             print('Liked')
-            # save image into likes
             file_count = count_files(LIKES)
             name = LIKES + '/liked_{}.jpg'.format(str(file_count + 1))
             print(name)
@@ -144,14 +127,10 @@ def data_collection(seconds):
 def keyboard_test():
     print('Press a key')
     while True:
-        # Wait for a key press event
         event = keyboard.read_event()
-        # Check if the event is a key press event
         if event.event_type == 'down':
-            # Get the key value from the event
             key_value = event.name
 
-            # Check for left/right arrow key presses
             if key_value == 'left':
                 print('Left arrow key pressed')
             elif key_value == 'right':
@@ -185,13 +164,12 @@ def main(test=False):
 
 if __name__ == "__main__":
     src = web_engine.WebEngine()
-    # terrible but too lazy to change it
+
     LIKES = cfg.liked_images
     DISLIKES = cfg.disliked_images
     ML_LIKES = cfg.mliked_images
     ML_DISLIKES = cfg.mdisliked_images
 
-    # arg-parser for mode selection
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', type=str, default='data', help='The mode we want to run either data for data collection or auto for automatic swiping')
     parser.add_argument('--validation', type=int, default=1, help='Weahter we want to validate the model or not 1 or 0 for yes or no')
