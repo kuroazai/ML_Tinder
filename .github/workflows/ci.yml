@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  # The dataset, metric, locator and config code, with neither TensorFlow nor
+  # Selenium installed. This is the job that keeps the optional extras genuinely
+  # optional: if something in src/ starts importing either at module scope, this
+  # fails while the full job would still pass.
+  core:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install without the extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Nothing imports tensorflow or selenium at module scope
+        run: |
+          python -c "
+          import sys, swipeml
+          from swipeml import automation, backbones, dataset, evaluate, manifest, predict, training
+          assert 'tensorflow' not in sys.modules, 'tensorflow imported at module scope'
+          assert 'selenium' not in sys.modules, 'selenium imported at module scope'
+          print('clean')
+          "
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Type check
+        run: mypy
+
+      - name: Test
+        run: pytest --cov=swipeml --cov-report=term-missing
+
+      - name: The CLI works with no extras installed
+        run: |
+          swipeml backbones
+          swipeml selectors

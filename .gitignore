@@ -1,0 +1,35 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Your paths and your browser profile location.
+.env
+*.env
+!.env.example
+
+# Training data is photographs of real people. It is not yours to publish and
+# it is not ours to host.
+training_data/
+unsorted/
+
+# Models, their manifests, and the split record. A trained model encodes the
+# dataset it came from, so it stays local too.
+models/
+*.h5
+*.keras
+*.manifest.json
+split.json
+_split/
+
+# Logs
+logs/
+tensorboard/

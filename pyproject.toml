@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "swipeml"
+version = "1.0.0"
+description = "Binary image classification from your own labels, with the browser automation to gather them"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Fidelis Mwansa" }]
+keywords = ["transfer-learning", "keras", "image-classification", "selenium", "mlops"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+# numpy only. The metrics are computed here rather than pulling in scikit-learn
+# for twenty lines of arithmetic, and the heavy pieces are optional extras so
+# the dataset and metric code is usable on its own.
+#
+# The original requirements.txt listed twelve packages including tensorflow,
+# keras, keras-applications, scikit-learn and cssutils, all unconditionally.
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+# Training and prediction. Large, hence optional.
+train = ["tensorflow>=2.12", "pillow>=9.0", "scipy>=1.10"]
+# Browser automation.
+automation = ["selenium>=4.10", "requests>=2.28"]
+all = [
+    "tensorflow>=2.12",
+    "pillow>=9.0",
+    "scipy>=1.10",
+    "selenium>=4.10",
+    "requests>=2.28",
+]
+# mypy 1.11 or newer. numpy 2.x ships type syntax that older mypy cannot
+# parse, and the failure is dozens of errors inside numpy's own stubs
+# rather than anything in this package.
+dev = ["pytest>=8.2", "pytest-cov>=4", "ruff>=0.4", "mypy>=1.11", "types-requests"]
+
+[project.scripts]
+swipeml = "swipeml.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/kuroazai/ML_Tinder"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/swipeml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "keras: needs tensorflow",
+    "selenium: needs selenium",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+# 3.12, not the 3.10 floor this package supports: recent numpy stubs use 3.12
+# type syntax and mypy refuses to parse them under an older target. The CI
+# matrix runs 3.10, so a version-specific error still gets caught there.
+python_version = "3.12"
+files = ["src/swipeml"]
+ignore_missing_imports = true
