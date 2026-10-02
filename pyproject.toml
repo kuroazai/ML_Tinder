@@ -51,7 +51,7 @@ dev = ["pytest>=8.2", "pytest-cov>=4", "ruff>=0.4", "mypy>=1.11", "types-request
 swipeml = "swipeml.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/kuroazai/ML_Tinder"
+Homepage = "https://github.com/kuroazai/swipeml"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/swipeml"]
