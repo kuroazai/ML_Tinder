@@ -27,18 +27,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Nothing imports tensorflow or selenium at module scope
+      - name: No optional dependency is imported at module scope
         run: |
           python -c "
           import sys, swipeml
           from swipeml import automation, backbones, dataset, evaluate, manifest, predict, training
-          assert 'tensorflow' not in sys.modules, 'tensorflow imported at module scope'
-          assert 'selenium' not in sys.modules, 'selenium imported at module scope'
+          for name in ('tensorflow', 'keras', 'selenium', 'requests', 'cv2'):
+              assert name not in sys.modules, name + ' imported at module scope'
           print('clean')
           "
 
       - name: Lint
-        run: ruff check src tests
+        run: ruff check src tests scripts
 
       - name: Type check
         run: mypy

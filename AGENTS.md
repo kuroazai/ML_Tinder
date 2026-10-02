@@ -53,11 +53,23 @@ TensorFlow"; `_find_one` imported Selenium before validating the strategy type,
 so a typo reported a missing dependency. Argument and state checks go first,
 heavy imports second.
 
-**Keep the extras optional.** TensorFlow and Selenium are imported inside the
-functions that use them, never at module scope in `src/`. CI has a `core` job
-that installs neither and asserts they are absent from `sys.modules` after
-importing every module. If you add a module-scope import of either, that job
-fails and it is right to.
+**Keep the extras optional.** TensorFlow, Selenium and requests are imported
+inside the functions that use them, never at module scope in `src/`, and never
+before the code has established that it needs them. CI has a `core` job that
+installs none of them and asserts they are absent from `sys.modules` after
+importing every module.
+
+Check it locally before pushing:
+
+```bash
+python scripts/check_optional_extras.py
+```
+
+That runs the suite with all of them blocked by a meta-path finder, changing
+nothing about your environment. It has already caught this: `fetch_image` did
+`import requests` unconditionally even when a session was supplied, which made
+the `HttpGetter` protocol pointless and passed locally only because requests
+was installed.
 
 **No globals.** Everything goes through `TrainingConfig`, `Settings` or an
 argument. The previous version read an `ARGS` module global from inside a method,

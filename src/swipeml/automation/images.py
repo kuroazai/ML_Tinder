@@ -71,13 +71,21 @@ def fetch_image(
     an image, so a failed download cannot leave a half-file that a later run
     counts as training data.
     """
-    import requests
-
     target = Path(destination)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + ".part")
 
-    http: Any = session if session is not None else requests
+    # requests is imported only when no session was supplied. Importing it
+    # regardless would make the HttpGetter protocol pointless: the whole reason
+    # a session can be passed in is so this works, and can be tested, without
+    # requests installed.
+    http: Any
+    if session is not None:
+        http = session
+    else:
+        import requests
+
+        http = requests
     try:
         response = http.get(url, stream=True, timeout=timeout)
     except Exception as exc:  # noqa: BLE001 - requests raises a family of these
